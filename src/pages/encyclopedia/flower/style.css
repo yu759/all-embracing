@@ -1,0 +1,305 @@
+/* --- 核心改动 1：梦幻粉色背景基调 (保持不变) --- */
+.flower-wiki.dynamic-bg {
+  min-height: 100vh;
+  padding-bottom: 50px;
+  position: relative;
+  overflow-x: hidden;
+  background: radial-gradient(
+      circle at 50% 30%,
+      rgba(255, 245, 250, 0.6) 0%,
+      transparent 60%
+    ),
+    linear-gradient(to bottom, #ffd1ff 0%, #fad0c4 50%, #ff9a9e 100%);
+  background-blend-mode: overlay;
+}
+
+/* --- 核心改动 2：栀子花纹理叠加 (保持不变) --- */
+.flower-wiki.dynamic-bg::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  opacity: 0.25;
+  background-image: url("data:image/svg+xml,%3Csvg width='120' height='120' viewBox='0 0 120 120' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M60 60c-10-10-25-10-35 0s-10 25 0 35 25 10 35 0 10-25 0-35zm0 0c10-10 25-10 35 0s10 25 0 35-25 10-35 0-10-25 0-35zm0 0c-10 10-10 25 0 35s25 10 35 0 10-25 0-35-25-10-35 0zm0 0c10 10 10 25 0 35s-25 10-35 0-10-25 0-35 25-10 35 0z' fill='%23ffffff' fill-opacity='0.6'/%3E%3C/svg%3E");
+  background-size: 160px 160px;
+  pointer-events: none;
+  animation: patternMove 80s linear infinite;
+}
+
+@keyframes patternMove {
+  0% {
+    background-position: 0 0;
+  }
+  100% {
+    background-position: 320px 320px;
+  }
+}
+
+/* --- 核心改动 3：花瓣雨效果 (大量花瓣 + 快速下落) --- */
+.floating-petals-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.petal {
+  position: absolute;
+  background: rgba(
+    255,
+    255,
+    255,
+    0.6
+  ); /* 稍微增加不透明度以便在快速运动中看清 */
+  border-radius: 150% 0 150% 0;
+  animation: floatDown linear infinite;
+  top: -10%;
+}
+
+/* 第一组：快速、近景花瓣 */
+.p1 {
+  width: 24px;
+  height: 30px;
+  left: 5%;
+  animation-duration: 7s;
+  animation-delay: 0s;
+}
+.p2 {
+  width: 20px;
+  height: 26px;
+  left: 15%;
+  animation-duration: 8s;
+  animation-delay: 1.5s;
+  background: rgba(255, 240, 245, 0.7);
+}
+.p3 {
+  width: 28px;
+  height: 34px;
+  left: 25%;
+  animation-duration: 6.5s;
+  animation-delay: 3s;
+}
+.p4 {
+  width: 22px;
+  height: 28px;
+  left: 35%;
+  animation-duration: 7.5s;
+  animation-delay: 0.5s;
+  background: rgba(255, 235, 240, 0.7);
+}
+.p5 {
+  width: 26px;
+  height: 32px;
+  left: 45%;
+  animation-duration: 8.5s;
+  animation-delay: 4s;
+}
+.p6 {
+  width: 18px;
+  height: 24px;
+  left: 55%;
+  animation-duration: 9s;
+  animation-delay: 2s;
+}
+.p7 {
+  width: 30px;
+  height: 36px;
+  left: 65%;
+  animation-duration: 7s;
+  animation-delay: 5.5s;
+  opacity: 0.8;
+}
+.p8 {
+  width: 16px;
+  height: 20px;
+  left: 75%;
+  animation-duration: 8s;
+  animation-delay: 1s;
+  background: rgba(255, 245, 255, 0.8);
+}
+
+/* 第二组：中速、中景花瓣 (新增) */
+.p9 {
+  width: 20px;
+  height: 25px;
+  left: 85%;
+  animation-duration: 10s;
+  animation-delay: 0.2s;
+  opacity: 0.6;
+}
+.p10 {
+  width: 15px;
+  height: 18px;
+  left: 95%;
+  animation-duration: 11s;
+  animation-delay: 4.5s;
+  opacity: 0.5;
+}
+.p11 {
+  width: 22px;
+  height: 27px;
+  left: 2%;
+  animation-duration: 9.5s;
+  animation-delay: 2.8s;
+}
+.p12 {
+  width: 18px;
+  height: 23px;
+  left: 12%;
+  animation-duration: 10.5s;
+  animation-delay: 6.1s;
+  background: rgba(255, 240, 245, 0.6);
+}
+.p13 {
+  width: 24px;
+  height: 30px;
+  left: 22%;
+  animation-duration: 12s;
+  animation-delay: 1.2s;
+}
+.p14 {
+  width: 16px;
+  height: 20px;
+  left: 32%;
+  animation-duration: 11.5s;
+  animation-delay: 5.8s;
+}
+.p15 {
+  width: 20px;
+  height: 25px;
+  left: 42%;
+  animation-duration: 10s;
+  animation-delay: 3.4s;
+  background: rgba(255, 235, 240, 0.6);
+}
+.p16 {
+  width: 14px;
+  height: 17px;
+  left: 52%;
+  animation-duration: 12.5s;
+  animation-delay: 7.2s;
+  opacity: 0.5;
+}
+.p17 {
+  width: 26px;
+  height: 32px;
+  left: 62%;
+  animation-duration: 9.8s;
+  animation-delay: 2.1s;
+}
+.p18 {
+  width: 18px;
+  height: 22px;
+  left: 72%;
+  animation-duration: 11s;
+  animation-delay: 6.5s;
+  background: rgba(255, 245, 255, 0.6);
+}
+
+/* 第三组：慢速、远景细碎花瓣 (新增，增加层次感) */
+.p19 {
+  width: 12px;
+  height: 15px;
+  left: 82%;
+  animation-duration: 14s;
+  animation-delay: 0.8s;
+  opacity: 0.4;
+}
+.p20 {
+  width: 10px;
+  height: 13px;
+  left: 92%;
+  animation-duration: 15s;
+  animation-delay: 5.2s;
+  opacity: 0.4;
+}
+.p21 {
+  width: 14px;
+  height: 18px;
+  left: 8%;
+  animation-duration: 13s;
+  animation-delay: 3.7s;
+  opacity: 0.4;
+}
+.p22 {
+  width: 12px;
+  height: 15px;
+  left: 18%;
+  animation-duration: 14.5s;
+  animation-delay: 8.1s;
+  opacity: 0.4;
+}
+.p23 {
+  width: 15px;
+  height: 19px;
+  left: 28%;
+  animation-duration: 13.5s;
+  animation-delay: 1.9s;
+  opacity: 0.4;
+}
+.p24 {
+  width: 10px;
+  height: 13px;
+  left: 38%;
+  animation-duration: 15s;
+  animation-delay: 6.8s;
+  opacity: 0.4;
+}
+.p25 {
+  width: 13px;
+  height: 16px;
+  left: 48%;
+  animation-duration: 14s;
+  animation-delay: 4.2s;
+  opacity: 0.4;
+}
+.p26 {
+  width: 11px;
+  height: 14px;
+  left: 58%;
+  animation-duration: 15s;
+  animation-delay: 9s;
+  opacity: 0.4;
+}
+.p27 {
+  width: 14px;
+  height: 18px;
+  left: 68%;
+  animation-duration: 13.2s;
+  animation-delay: 2.5s;
+  opacity: 0.4;
+}
+.p28 {
+  width: 12px;
+  height: 15px;
+  left: 78%;
+  animation-duration: 14.8s;
+  animation-delay: 7.7s;
+  opacity: 0.4;
+}
+
+@keyframes floatDown {
+  0% {
+    top: -15%;
+    transform: translateX(0) rotate(0deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.8;
+  } /* 快速显现 */
+  90% {
+    opacity: 0.8;
+  }
+  100% {
+    top: 110%; /* 飘落到底部外部 */
+    transform: translateX(60px) rotate(720deg); /* 加快旋转速度 (720deg) */
+    opacity: 0;
+  }
+}

@@ -1,0 +1,138 @@
+# drone/templates/vue3-pipeline.yml
+---
+kind: template
+name: vue3-base-pipeline
+
+# 基础环境变量
+environment:
+  NODE_VERSION: 20
+  PROJECT_NAME: ${DRONE_REPO_NAME}
+  BUILD_TIMEOUT: 1800
+
+# 基础步骤
+steps:
+  # 安装依赖
+  - name: install
+    image: node:${NODE_VERSION}-alpine
+    commands:
+      - npm ci
+
+  # 代码检查
+  - name: lint
+    image: node:${NODE_VERSION}-alpine
+    commands:
+      - npm run lint
+
+  # 类型检查
+  - name: type-check
+    image: node:${NODE_VERSION}-alpine
+    commands:
+      - npm run type-check
+
+  # 单元测试
+  - name: test
+    image: node:${NODE_VERSION}-alpine
+    commands:
+      - npm run test:coverage
+
+  # 构建
+  - name: build
+    image: node:${NODE_VERSION}-alpine
+    commands:
+      - npm run build
+
+---
+# 开发环境流水线
+kind: pipeline
+type: docker
+name: development
+
+extends:
+  template: vue3-base-pipeline
+  steps:
+    # 覆盖构建命令
+    - name: build
+      image: node:${NODE_VERSION}-alpine
+      environment:
+        VITE_APP_ENV: development
+      commands:
+        - npm run build
+      when:
+        branch: feature/*
+
+---
+# 测试环境流水线
+kind: pipeline
+type: docker
+name: staging
+
+extends:
+  template: vue3-base-pipeline
+  steps:
+    # 安全扫描
+    - name: security-scan
+      image: aquasec/trivy
+      commands:
+        - trivy fs --severity HIGH,CRITICAL .
+
+    # 构建测试环境
+    - name: build
+      image: node:${NODE_VERSION}-alpine
+      environment:
+        VITE_APP_ENV: staging
+      commands:
+        - npm run build:staging
+
+    # 部署到测试环境
+    - name: deploy
+      image: plugins/webhook
+      settings:
+        url: ${WEBHOOK_URL_STAGING}
+        method: post
+      when:
+        branch: develop
+
+---
+# 生产环境流水线
+kind: pipeline
+type: docker
+name: production
+
+extends:
+  template: vue3-base-pipeline
+  steps:
+    # 安全扫描（更严格）
+    - name: security-scan
+      image: aquasec/trivy
+      commands:
+        - trivy fs --severity HIGH,CRITICAL --exit-code 1 .
+
+    # 依赖检查
+    - name: check-deps
+      image: node:${NODE_VERSION}-alpine
+      commands:
+        - npx depcheck
+
+    # 构建生产环境
+    - name: build
+      image: node:${NODE_VERSION}-alpine
+      environment:
+        VITE_APP_ENV: production
+      commands:
+        - npm run build:production
+
+    # 性能分析
+    - name: analyze
+      image: node:${NODE_VERSION}-alpine
+      commands:
+        - npx vite-bundle-analyzer dist/stats.html
+
+    # 部署到生产环境（需要手动批准）
+    - name: deploy
+      image: plugins/webhook
+      settings:
+        url: ${WEBHOOK_URL_PROD}
+        method: post
+      when:
+        branch: main
+        event: push

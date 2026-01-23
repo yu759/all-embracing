@@ -1,0 +1,92 @@
+# deploy/k8s/staging/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-vue-app-staging
+  namespace: staging
+  labels:
+    app: my-vue-app
+    environment: staging
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: my-vue-app
+      environment: staging
+  template:
+    metadata:
+      labels:
+        app: my-vue-app
+        environment: staging
+        version: ${DRONE_BUILD_NUMBER}
+    spec:
+      containers:
+      - name: web
+        image: ${REGISTRY}/${PROJECT_NAME}:staging-${DRONE_BUILD_NUMBER}
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 80
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 80
+          initialDelaySeconds: 10
+          periodSeconds: 5
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 80
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "500m"
+        env:
+        - name: VITE_APP_ENV
+          value: "staging"
+        - name: VITE_APP_VERSION
+          value: "${DRONE_BUILD_NUMBER}"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-vue-app-service-staging
+  namespace: staging
+spec:
+  selector:
+    app: my-vue-app
+    environment: staging
+  ports:
+  - port: 80
+    targetPort: 80
+  type: ClusterIP
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: my-vue-app-ingress-staging
+  namespace: staging
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    cert-manager.io/cluster-issuer: "letsencrypt-staging"
+spec:
+  ingressClassName: nginx
+  tls:
+  - hosts:
+    - staging.myapp.com
+    secretName: my-vue-app-tls-staging
+  rules:
+  - host: staging.myapp.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: my-vue-app-service-staging
+            port:
+              number: 80

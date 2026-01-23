@@ -1,0 +1,280 @@
+# .drone.yml - Vue3 项目基础模板
+kind: pipeline
+type: docker
+name: vue3-ci-cd
+
+# ============ 环境变量 ============
+environment:
+  NODE_VERSION: 20
+  REGISTRY: registry.company.com  # 你的镜像仓库地址
+  PROJECT_NAME: my-vue-app
+  APP_PORT: 4173
+
+# ============ 工作区配置 ============
+workspace:
+  base: /drone/src
+  path: ${DRONE_REPO_NAME}
+
+# ============ 步骤定义 ============
+steps:
+  # ----------------------------
+  # 阶段 0: 环境准备与缓存
+  # ----------------------------
+  - name: restore-cache
+    image: drillster/drone-volume-cache
+    settings:
+      restore: true
+      mount:
+        - ./node_modules
+    volumes:
+      - name: cache
+        path: /cache
+
+  - name: install-dependencies
+    image: node:${NODE_VERSION}-alpine
+    commands:
+      - npm ci --prefer-offline --legacy-peer-deps
+      - npm cache clean --force
+    environment:
+      NODE_OPTIONS: "--max-old-space-size=4096"
+
+  - name: rebuild-cache
+    image: drillster/drone-volume-cache
+    settings:
+      rebuild: true
+      mount:
+        - ./node_modules
+    volumes:
+      - name: cache
+        path: /cache
+    when:
+      event: [push, tag]
+
+  # ----------------------------
+  # 阶段 1: 代码质量检查
+  # ----------------------------
+  - name: lint
+    image: node:${NODE_VERSION}-alpine
+    commands:
+      - npm run lint
+    when:
+      event: [push, pull_request]
+
+  - name: type-check
+    image: node:${NODE_VERSION}-alpine
+    commands:
+      - npm run type-check
+    when:
+      event: [push, pull_request]
+
+  # ----------------------------
+  # 阶段 2: 安全审计
+  # ----------------------------
+  - name: security-audit
+    image: node:${NODE_VERSION}-alpine
+    commands:
+      - npm audit --audit-level=high
+      - npx @cyclonedx/cyclonedx-npm --output-file bom.json
+    when:
+      event: [push, tag]
+
+  # ----------------------------
+  # 阶段 3: 单元测试
+  # ----------------------------
+  - name: unit-tests
+    image: node:${NODE_VERSION}-alpine
+    commands:
+      - npm run test:coverage
+    environment:
+      CI: true
+      NODE_ENV: test
+    when:
+      event: [push, pull_request]
+
+  # ----------------------------
+  # 阶段 4: 构建阶段
+  # ----------------------------
+  - name: build-staging
+    image: node:${NODE_VERSION}-alpine
+    environment:
+      VITE_APP_ENV: staging
+      VITE_APP_VERSION: ${DRONE_BUILD_NUMBER}
+      VITE_APP_COMMIT: ${DRONE_COMMIT_SHA:0:8}
+    commands:
+      - npm run build:staging
+      - ls -la dist/ && du -sh dist/
+    when:
+      branch: [develop, release/*]
+
+  - name: build-production
+    image: node:${NODE_VERSION}-alpine
+    environment:
+      VITE_APP_ENV: production
+      VITE_APP_VERSION: ${DRONE_BUILD_NUMBER}
+      VITE_APP_COMMIT: ${DRONE_COMMIT_SHA:0:8}
+    commands:
+      - npm run build:production
+      - ls -la dist/ && du -sh dist/
+    when:
+      branch: main
+      event: [push, tag]
+
+  # ----------------------------
+  # 阶段 5: 镜像构建与推送
+  # ----------------------------
+  - name: docker-build-staging
+    image: plugins/docker
+    settings:
+      repo: ${REGISTRY}/${PROJECT_NAME}
+      dockerfile: Dockerfile.staging
+      tags:
+        - staging-${DRONE_BUILD_NUMBER}
+        - staging-latest
+      build_args:
+        - VITE_APP_ENV=staging
+      username:
+        from_secret: docker_username
+      password:
+        from_secret: docker_password
+    when:
+      branch: develop
+      event: push
+
+  - name: docker-build-production
+    image: plugins/docker
+    settings:
+      repo: ${REGISTRY}/${PROJECT_NAME}
+      dockerfile: Dockerfile.production
+      tags:
+        - ${DRONE_BUILD_NUMBER}
+        - latest
+        - ${DRONE_TAG}
+      build_args:
+        - VITE_APP_ENV=production
+      username:
+        from_secret: docker_username
+      password:
+        from_secret: docker_password
+    when:
+      branch: main
+      event: [push, tag]
+
+  # ----------------------------
+  # 阶段 6: 部署到测试环境
+  # ----------------------------
+  - name: deploy-staging
+    image: alpine/curl
+    commands:
+      - |
+        curl -X POST \
+          -H "Content-Type: application/json" \
+          -H "Authorization: Bearer ${DEPLOY_TOKEN_STAGING}" \
+          -d '{
+            "image": "${REGISTRY}/${PROJECT_NAME}:staging-${DRONE_BUILD_NUMBER}",
+            "environment": "staging",
+            "app_port": "${APP_PORT}"
+          }' \
+          ${WEBHOOK_URL_STAGING}
+    when:
+      branch: develop
+      event: push
+
+  # ----------------------------
+  # 阶段 7: 部署到生产环境
+  # ----------------------------
+  - name: deploy-production
+    image: alpine/curl
+    commands:
+      - |
+        curl -X POST \
+          -H "Content-Type: application/json" \
+          -H "Authorization: Bearer ${DEPLOY_TOKEN_PROD}" \
+          -d '{
+            "image": "${REGISTRY}/${PROJECT_NAME}:${DRONE_BUILD_NUMBER}",
+            "environment": "production",
+            "app_port": "${APP_PORT}",
+            "replicas": 3
+          }' \
+          ${WEBHOOK_URL_PROD}
+    when:
+      branch: main
+      event: [push, tag]
+
+  # ----------------------------
+  # 阶段 8: 通知
+  # ----------------------------
+  - name: notify-teams
+    image: plugins/slack
+    settings:
+      webhook:
+        from_secret: slack_webhook
+      channel: builds
+      username: Drone CI
+      template: |
+        {{#success build.status}}
+          ✅ *构建成功* - {{repo.name}} #{{build.number}}
+          *分支*: {{build.branch}}
+          *提交*: {{truncate build.commit 8}}
+          *提交者*: {{build.author}}
+          *耗时*: {{since build.started}}
+          *查看*: {{build.link}}
+        {{else}}
+          ❌ *构建失败* - {{repo.name}} #{{build.number}}
+          *分支*: {{build.branch}}
+          *提交*: {{truncate build.commit 8}}
+          *提交者*: {{build.author}}
+          *失败步骤*: {{build.failed_steps}}
+          *查看*: {{build.link}}
+        {{/success}}
+    when:
+      status: [success, failure]
+
+# ============ 触发条件 ============
+trigger:
+  # PR 触发
+  pull_request:
+    branch:
+      - main
+      - develop
+      - feature/*
+    event:
+      - opened
+      - reopened
+      - synchronize
+  
+  # 推送触发
+  push:
+    branch:
+      - main
+      - develop
+      - feature/*
+      - release/*
+      - hotfix/*
+  
+  # 标签触发
+  tag:
+    include:
+      - v*
+      - release-*
+
+# ============ 服务依赖 ============
+services:
+  - name: redis
+    image: redis:alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - 6379:6379
+
+  - name: postgres
+    image: postgres:15
+    environment:
+      POSTGRES_PASSWORD: testpass
+      POSTGRES_DB: testdb
+    ports:
+      - 5432:5432
+
+# ============ 卷挂载 ============
+volumes:
+  - name: cache
+    host:
+      path: /tmp/drone-cache/${DRONE_REPO}

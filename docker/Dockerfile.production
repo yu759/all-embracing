@@ -1,0 +1,23 @@
+# 多阶段构建，减少镜像大小
+FROM node:20-alpine AS deps
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci --only=production --legacy-peer-deps
+
+FROM deps AS builder
+WORKDIR /app
+COPY . .
+RUN npm run build:production
+
+# 使用 distroless 镜像作为运行时，更安全
+FROM gcr.io/distroless/nodejs20-debian12 AS runtime
+WORKDIR /app
+
+# 复制构建产物
+COPY --from=builder /app/dist ./dist
+
+# 添加非 root 用户
+USER 1000:1000
+
+# 使用 serve 作为静态文件服务器
+CMD ["npx", "serve", "-s", "dist", "-l", "4173"]

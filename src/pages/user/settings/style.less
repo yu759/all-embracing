@@ -1,0 +1,114 @@
+* {
+  box-sizing: border-box;
+}
+
+/* --- 磨砂玻璃通用基类 --- */
+.glass {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 24px;
+//   z-index: 1;
+}
+.settings-container{
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle at center, #1e293b 0%, #020617 100%);
+  position: relative;
+  overflow: hidden;
+  color: #f8fafc;
+
+  .click-item{
+    // 1. 修改标题颜色
+  :deep(.ant-list-item-meta-title) {
+    color: #f8fafc !important; /* 强制覆盖 AntD 默认颜色 */
+    font-size: 16px;           /* 也可以顺便改大小 */
+    margin-bottom: 4px;        /* 调整标题和描述的间距 */
+  }
+
+  // 2. 修改描述文字颜色
+  :deep(.ant-list-item-meta-description) {
+    color: rgba(248, 250, 252, 0.6) !important; /* 描述通常比标题淡一点，看起来更有层次 */
+  }
+
+}
+.page-slider {
+  display: flex;
+  width: 200%; // 主页和详情页并排，各占 100%
+  height: 100%;
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  &.is-detail {
+    // 3. 位移变换：主页移出，子页移入
+    transform: translateX(-50%);
+  }
+}
+
+.page {
+  width: 50%; // 相对父级宽度的一半，即 375px
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 40px;
+  overflow: hidden;
+
+  &.main-page{background: transparent;}
+  &.detail-page{background: rgba(255, 255, 255, 0.01);flex: 1;overflow-y: auto;      /* 允许垂直滚动 */
+  padding: 0 20px 40px;  /* 底部多留一点空间，防止被切掉 */}
+}
+
+.header {
+  flex-shrink: 0;
+  margin-bottom: 24px;
+  h2, h3 { color: #81c784; margin: 0; } // 匹配你的侧边栏颜色
+  display: flex;
+  align-items: center;//垂直居中
+  justify-content:flex-start;//水平居左
+  gap: 16px;
+  font-size: large;
+  
+}
+}
+/* --- 背景动画 --- */
+.particles-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.particle {
+  position: absolute;
+  border-radius: 50%;
+  top: -5%;
+  animation: fall linear infinite;
+}
+
+@keyframes fall {
+  to {
+    transform: translateY(110vh) rotate(360deg);
+  }
+}
+
+/* 响应式适配 */
+@media (max-width: 1024px) {
+  .user-layout {
+    flex-direction: column;
+    padding: 20px;
+  }
+  .sidebar-container {
+    width: 100%;
+  }
+}
+
+
+.carousel-img {
+  width: 100%;          /* 宽度强制填充父容器 */
+  height: 200px;        /* 保持你想要的固定高度 */
+  object-fit: cover;    /* 关键：裁切图片以填充容器，而不拉伸变形 */
+  border-radius: 12px;  /* 增加圆角，符合磨砂玻璃美学 */
+  display: block;
+}
+
+
+
