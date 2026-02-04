@@ -6,7 +6,9 @@
         <router-link to="/encyclopedia">百科全书</router-link> |
         <router-link to="/fireworks/heart">烟花展示</router-link> |
         <router-link to="/user">用户管理</router-link> |
-        <router-link to="/garden/butterflyGarden">蝴蝶花园</router-link>
+        <router-link to="/garden/butterflyGarden">蝴蝶花园</router-link>|
+        <router-link to="/eth">ETH</router-link>|
+        <router-link to="/css">CSS</router-link>
       </nav>
 
       <!-- 页面内容区域 -->

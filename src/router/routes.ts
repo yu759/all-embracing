@@ -15,7 +15,7 @@ const routes = [
       },
        {
         path:'/user/userInfo',
-        name:'UserInfomation',
+        name:'UserInfo',
          component: () => import('../pages/user/userInfo.vue'),
       },
       {
@@ -112,6 +112,14 @@ const routes = [
     path: '/garden/butterflyGarden',
     name: 'Garden',
     component: () => import( '../pages/garden/butterflyGarden/butterflyGarden.vue'),  
+  },
+  {path:'/eth',
+    name:'ETH',
+    component:()=>import('../pages/eth/eth.vue'),
+  },
+    {path:'/css',
+    name:'CSS',
+    component:()=>import('../pages/css/css.vue'),
   },
 ]
 

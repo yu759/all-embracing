@@ -33,12 +33,12 @@
 
     <main class="main-content">
       <div class="settings-card glass">
-        <h3 class="section-title">系统配置 · System</h3>
+        <!-- <h3 class="section-title">系统配置 · System</h3> -->
         <nav class="settings-list">
-          <div v-for="item in menuItems" :key="item" class="setting-row">
+          <!-- <div v-for="item in menuItems" :key="item" class="setting-row">
             <span>{{ item }}</span>
             <span class="arrow">→</span>
-          </div>
+          </div> -->
         </nav>
         <button class="logout-action" @click="handleLogout">
           注销连接 / Terminate
@@ -55,12 +55,12 @@ const stats = [
   { num: 88, lab: "星图探测", color: "#a855f7" },
 ];
 
-const menuItems = [
-  "账号安全性管理",
-  "界面偏好与主题",
-  "数据同步设置",
-  "观测点权限申请",
-];
+// const menuItems = [
+//   "账号安全性管理",
+//   "界面偏好与主题",
+//   "数据同步设置",
+//   "观测点权限申请",
+// ];
 
 const getParticleStyle = () => {
   const colors = ["#f472b6", "#4ade80", "#a855f7", "#2dd4bf"];
